@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChatGPT Apps 寫入權限分級指南（Microsoft 365）</title>
+  <style>
+    :root {
+      --level1: #22c55e;
+      --level1-bg: #f0fdf4;
+      --level1-border: #bbf7d0;
+      --level2: #3b82f6;
+      --level2-bg: #eff6ff;
+      --level2-border: #bfdbfe;
+      --level3: #f59e0b;
+      --level3-bg: #fffbeb;
+      --level3-border: #fde68a;
+      --level4: #ef4444;
+      --level4-bg: #fef2f2;
+      --level4-border: #fecaca;
+      --neutral-50: #f8fafc;
+      --neutral-100: #f1f5f9;
+      --neutral-200: #e2e8f0;
+      --neutral-500: #64748b;
+      --neutral-700: #334155;
+      --neutral-900: #0f172a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
+      background: var(--neutral-50);
+      color: var(--neutral-900);
+      line-height: 1.6;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+      color: #fff;
+      padding: 40px 32px 32px;
+    }
+    header h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 8px; }
+    header p  { font-size: 0.95rem; opacity: 0.85; }
+
+    /* ── Layout ── */
+    main { max-width: 1100px; margin: 0 auto; padding: 32px 24px 64px; }
+
+    section { margin-bottom: 48px; }
+    section > h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--neutral-700);
+      border-left: 4px solid #2563eb;
+      padding-left: 12px;
+      margin-bottom: 20px;
+    }
+
+    /* ── Risk Legend ── */
+    .legend-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    .legend-card {
+      border-radius: 10px;
+      padding: 16px 18px;
+      border: 1px solid transparent;
+    }
+    .legend-card .badge { display: inline-block; font-size: 0.72rem; font-weight: 700; border-radius: 999px; padding: 2px 10px; margin-bottom: 8px; letter-spacing: 0.04em; }
+    .legend-card h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
+    .legend-card p  { font-size: 0.82rem; color: var(--neutral-500); }
+
+    .l1 { background: var(--level1-bg); border-color: var(--level1-border); }
+    .l1 .badge { background: var(--level1); color: #fff; }
+    .l1 h3 { color: #15803d; }
+
+    .l2 { background: var(--level2-bg); border-color: var(--level2-border); }
+    .l2 .badge { background: var(--level2); color: #fff; }
+    .l2 h3 { color: #1d4ed8; }
+
+    .l3 { background: var(--level3-bg); border-color: var(--level3-border); }
+    .l3 .badge { background: var(--level3); color: #fff; }
+    .l3 h3 { color: #b45309; }
+
+    .l4 { background: var(--level4-bg); border-color: var(--level4-border); }
+    .l4 .badge { background: var(--level4); color: #fff; }
+    .l4 h3 { color: #b91c1c; }
+
+    /* ── App Tabs ── */
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+    .tab-btn {
+      padding: 8px 18px;
+      border-radius: 8px;
+      border: 1px solid var(--neutral-200);
+      background: #fff;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--neutral-700);
+      transition: all 0.15s;
+    }
+    .tab-btn:hover  { background: var(--neutral-100); }
+    .tab-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Permission Table ── */
+    .perm-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    .perm-table thead th {
+      background: var(--neutral-100);
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--neutral-500);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .perm-table tbody tr { border-top: 1px solid var(--neutral-200); }
+    .perm-table tbody tr:hover { background: var(--neutral-50); }
+    .perm-table td { padding: 12px 16px; vertical-align: top; }
+
+    .level-tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .tag-l1 { background: var(--level1-bg); color: #15803d; border: 1px solid var(--level1-border); }
+    .tag-l2 { background: var(--level2-bg); color: #1d4ed8; border: 1px solid var(--level2-border); }
+    .tag-l3 { background: var(--level3-bg); color: #b45309; border: 1px solid var(--level3-border); }
+    .tag-l4 { background: var(--level4-bg); color: #b91c1c; border: 1px solid var(--level4-border); }
+
+    /* ── Action Chip (clickable) ── */
+    .action-list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .action-chip {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 0.75rem;
+      background: var(--neutral-100);
+      border: 1px solid var(--neutral-200);
+      border-radius: 4px;
+      padding: 2px 8px;
+      color: var(--neutral-700);
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
+      user-select: none;
+    }
+    .action-chip:hover {
+      background: #dbeafe;
+      border-color: #93c5fd;
+      color: #1d4ed8;
+    }
+    .action-chip::after {
+      content: " ↗";
+      font-size: 0.65rem;
+      opacity: 0.5;
+    }
+
+    .note-box {
+      margin-top: 16px;
+      background: #f8fafc;
+      border: 1px solid var(--neutral-200);
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-size: 0.83rem;
+      color: var(--neutral-500);
+    }
+    .note-box strong { color: var(--neutral-700); }
+    .note-box ul { padding-left: 18px; margin-top: 6px; }
+    .note-box li { margin-bottom: 4px; }
+
+    /* ── Scenario Cards ── */
+    .scenario-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+    }
+    .scenario-card {
+      background: #fff;
+      border: 1px solid var(--neutral-200);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .scenario-card .plan-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .scenario-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 10px; }
+    .scenario-card .use-case {
+      font-size: 0.82rem;
+      color: var(--neutral-500);
+      margin-bottom: 12px;
+    }
+    .level-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .scenario-card ul {
+      font-size: 0.82rem;
+      color: var(--neutral-700);
+      padding-left: 16px;
+    }
+    .scenario-card li { margin-bottom: 4px; }
+    .scenario-card .warn {
+      font-size: 0.8rem;
+      color: #b45309;
+      background: var(--level3-bg);
+      border: 1px solid var(--level3-border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-top: 10px;
+    }
+
+    .plan-a { border-top: 3px solid var(--level1); }
+    .plan-a .plan-label { color: #15803d; }
+    .plan-b { border-top: 3px solid var(--level2); }
+    .plan-b .plan-label { color: #1d4ed8; }
+    .plan-c { border-top: 3px solid var(--level3); }
+    .plan-c .plan-label { color: #b45309; }
+    .plan-d { border-top: 3px solid var(--level4); }
+    .plan-d .plan-label { color: #b91c1c; }
+
+    /* ── Role Table ── */
+    .role-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    .role-table thead th {
+      background: var(--neutral-100);
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--neutral-500);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .role-table tbody tr { border-top: 1px solid var(--neutral-200); }
+    .role-table tbody tr:hover { background: var(--neutral-50); }
+    .role-table td { padding: 12px 16px; vertical-align: top; }
+
+    /* ── Preset Cards ── */
+    .preset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .preset-card {
+      background: #fff;
+      border: 1px solid var(--neutral-200);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .preset-card .preset-header {
+      padding: 14px 18px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .preset-safe .preset-header { background: #15803d; }
+    .preset-bal  .preset-header { background: #2563eb; }
+    .preset-auto .preset-header { background: #b45309; }
+    .preset-card .preset-body { padding: 14px 18px; font-size: 0.83rem; }
+    .preset-card .app-group { margin-bottom: 12px; }
+    .preset-card .app-group strong { display: block; font-size: 0.78rem; color: var(--neutral-500); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+    .preset-card .app-group .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+    .preset-card .chip-code {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 0.72rem;
+      background: var(--neutral-100);
+      border: 1px solid var(--neutral-200);
+      border-radius: 4px;
+      padding: 2px 7px;
+      color: var(--neutral-700);
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
+    }
+    .preset-card .chip-code:hover {
+      background: #dbeafe;
+      border-color: #93c5fd;
+      color: #1d4ed8;
+    }
+    .preset-card .chip-code::after { content: " ↗"; font-size: 0.6rem; opacity: 0.4; }
+    .preset-card .chip-warn {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 0.72rem;
+      background: var(--level4-bg);
+      border: 1px solid var(--level4-border);
+      border-radius: 4px;
+      padding: 2px 7px;
+      color: #b91c1c;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .preset-card .chip-warn:hover { background: #fee2e2; }
+    .preset-card .chip-warn::after { content: " ↗"; font-size: 0.6rem; opacity: 0.4; }
+
+    /* ── Summary ── */
+    .summary-list {
+      background: #fff;
+      border: 1px solid var(--neutral-200);
+      border-radius: 12px;
+      padding: 20px 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+      counter-reset: summary;
+    }
+    .summary-list li {
+      counter-increment: summary;
+      list-style: none;
+      padding: 10px 0 10px 44px;
+      position: relative;
+      font-size: 0.9rem;
+      border-bottom: 1px solid var(--neutral-100);
+    }
+    .summary-list li:last-child { border-bottom: none; }
+    .summary-list li::before {
+      content: counter(summary);
+      position: absolute;
+      left: 0;
+      top: 10px;
+      width: 28px;
+      height: 28px;
+      background: #2563eb;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+      backdrop-filter: blur(2px);
+    }
+    .modal-box {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+      max-width: 520px;
+      width: 100%;
+      overflow: hidden;
+    }
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--neutral-200);
+      gap: 12px;
+    }
+    .modal-action-name {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--neutral-900);
+    }
+    .modal-level-tag { flex-shrink: 0; }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.25rem;
+      cursor: pointer;
+      color: var(--neutral-500);
+      padding: 0 4px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .modal-close:hover { color: var(--neutral-900); }
+    .modal-body { padding: 18px 20px 20px; }
+    .modal-scope {
+      font-size: 0.8rem;
+      color: var(--neutral-500);
+      margin-bottom: 12px;
+    }
+    .modal-scope code {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      background: #edf2ff;
+      color: #2140a0;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.78rem;
+    }
+    .modal-desc {
+      font-size: 0.88rem;
+      color: var(--neutral-700);
+      line-height: 1.65;
+    }
+    .modal-hint {
+      margin-top: 14px;
+      font-size: 0.78rem;
+      color: var(--neutral-500);
+      padding-top: 12px;
+      border-top: 1px solid var(--neutral-100);
+    }
+    .modal-hint code {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      background: var(--neutral-100);
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>ChatGPT Apps 寫入權限分級指南</h1>
+  <p>Microsoft 365 — Outlook Calendar・Outlook Mail・SharePoint・Teams　｜　點擊功能名稱可查看詳細說明</p>
+</header>
+
+<main>
+
+  <!-- ① 風險等級說明 -->
+  <section id="sec-levels">
+    <h2>一、風險等級定義</h2>
+    <div class="legend-grid">
+      <div class="legend-card l1">
+        <span class="badge">Level 1　低風險</span>
+        <h3>草稿 / 個人狀態變更</h3>
+        <p>不直接對外發送、不刪除、不影響共享資源；操作多半可回復。</p>
+      </div>
+      <div class="legend-card l2">
+        <span class="badge">Level 2　中低風險</span>
+        <h3>新增內容 / 建立結構</h3>
+        <p>建立事件、資料夾、聊天、任務、頻道；通常不會立即造成外部影響。</p>
+      </div>
+      <div class="legend-card l3">
+        <span class="badge">Level 3　中高風險</span>
+        <h3>改動既有內容 / 對外送出</h3>
+        <p>發信、回覆、移動、更新、建立分享連結；容易造成誤寄或排程混亂。</p>
+      </div>
+      <div class="legend-card l4">
+        <span class="badge">Level 4　高風險</span>
+        <h3>刪除 / 共享帳號 / 批次操作</h3>
+        <p>刪除、取消會議、共享信箱寫入、批次搬移；影響面廣且難以回復。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ② 各 App 功能分類 -->
+  <section id="sec-apps">
+    <h2>二、各 App 功能與風險分類</h2>
+    <p style="font-size:0.82rem;color:var(--neutral-500);margin-bottom:16px;">點擊功能名稱可查看詳細功能說明與必要權限。</p>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="calendar">Outlook Calendar</button>
+      <button class="tab-btn" data-tab="mail">Outlook Mail</button>
+      <button class="tab-btn" data-tab="sharepoint">SharePoint</button>
+      <button class="tab-btn" data-tab="teams">Teams</button>
+    </div>
+
+    <!-- ═══ Calendar ═══ -->
+    <div class="tab-panel active" id="tab-calendar">
+      <table class="perm-table">
+        <thead>
+          <tr>
+            <th style="width:110px">風險等級</th>
+            <th>功能（點擊查看說明）</th>
+            <th>為什麼這個等級</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="level-tag tag-l2">Level 2　中低</span></td>
+            <td>
+              <div class="action-list">
+                <span class="action-chip"
+                  data-action="create_event"
+                  data-scope="Calendars.ReadWrite"
+                  data-level="l2"
+                  data-desc="在使用者的 Outlook 行事曆或指定的共享行事曆中建立新事件。可提供 recurrence 建立重複性系列事件。帶入與會者時，Outlook 會自動發送會議邀請（實際影響接近 Level 3）。">create_event</span>
+                <span class="action-chip"
+                  data-action="respond_to_event"
+                  data-scope="Calendars.ReadWrite"
+                  data-level="l2"
+                  data-desc="回應 Outlook 會議邀請，可選擇接受、拒絕或暫定。拒絕或暫定時可附上新的時間提議，需搭配 send_response=true。帶 send_response=true 時亦會送出 RSVP 通知，若組織要求嚴格可考慮提升至 Level 3。">respond_to_event</span>
+                <span class="action-chip"
+                  data-action="add_event_attachment"
+                  data-scope="Calendars.ReadWrite"
+                  data-level="l2"
+                  data-desc="將小型檔案參照附加至現有的 Outlook 行事曆事件。">add_event_attachment</span>
+              </div>
+            </td>
+            <td>會新增或修改單一會議內容，但通常侷限在個人或單場會議範圍。</td>
+          </tr>
+          <tr>
+            <td><span class="level-tag tag-l3">Level 3　中高</span></td>
+            <td>
+              <div class="action-list">
+                <span class="action-chip"
+                  data-action="update_event"
+                  data-scope="Calendars.ReadWrite"
+                  data-level="l3"
+                  data-desc="更新現有 Outlook 行事曆事件，可調整標題、內容、地點、與會者或時間。設定 recurrence 可將單次事件轉為重複性系列；更改重複系列的 recurrence 需指定 update_scope（entire_series 或 this_and_following）。只有提供的欄位會更新。">update_event</span>
+              </div>
+            </td>
+            <td>會改動既有會議內容、時間、參與者，可能造成誤通知或排程混亂。</td>
+          </tr>
+          <tr>
+            <td><span class="level-tag tag-l4">Level 4　高</span></td>
+            <td>
+              <div class="action-list">
+                <span class="action-chip"
+                  data-action="cancel_or_delete_event"
+                  data-scope="Calendars.ReadWrite"
+                  data-level="l4"
+                  data-desc="取消或刪除 Outlook 行事曆事件。主辦人使用 cancel 時，Outlook 會送出取消通知給所有與會者；delete 僅從行事曆中移除，是非主辦人的安全選項。">cancel_or_delete_event</span>
+              </div>
+            </td>
+            <td>直接取消或刪除會議，可能影響所有與會者；操作不可逆。</td>
+          </tr>
+          <tr>
+            <td><span class="level-tag tag-l4">Level 4　高</span></td>
+            <td>
+              <div class="action-list">
+                <span class="action-chip"
+                  data-action="create_shared_calendar_event"
+                  data-scope="Calendars.ReadWrite.Shared"
+                  data-level="l4"
+                  data-desc="在 delegated 或共享 Outlook 行事曆中建立事件。需先透過 list_calendars 確認目標行事曆屬於另一信箱，才使用此 action。個人主要行事曆請改用 create_event。">create_shared_calendar_event</span>
+                <span class="action-chip"
+                  data-action="respond_to_shared_calendar_event"
+                  data-scope="Calendars.ReadWrite.Shared"
+                  data-level="l4"
+                  data-desc="回應 delegated 或共享行事曆上的會議邀請。事件 calendar_id 屬於共享/delegated 行事曆時才使用。個人主要行事曆請改用 respond_to_event。">respond_to_shared_calendar_event</span>
+                <span class="action-chip"
+                  data-action="update_shared_calendar_event"
+                  data-scope="Calendars.ReadWrite.Shared"
+                  data-level="l4"
+                  data-desc="更新 delegated 或共享 Outlook 行事曆上的事件。需確認 calendar_id 來自共享/delegated 行事曆；個人主要行事曆請改用 update_event。">update_shared_calendar_event</span>
+                <span class="action-chip"
+                  data-action="add_shared_calendar_event_attachment"
+                  data-scope="Calendars.ReadWrite.Shared"
+                  data-level="l4"
+                  data-desc="將小型檔案參照附加至 delegated 或共享行事曆上的事件。">add_shared_calendar_event_attachment</span>
+                <span class="action-chip"
+                  data-action="cancel_or_delete_shared_calendar_event"
+                  data-scope="Calendars.ReadWrite.Shared"
+                  data-level="l4"
+                  data-desc="取消或刪除 delegated 或共享行事曆上的事件。僅在使用者明確要對共享/delegated 行事曆操作時使用；個人主要行事曆請改用 cancel_or_delete_event。">cancel_or_delete_shared_calendar_event</span>
+              </div>
+            </td>
+            <td>操作落在 delegated/shared calendar（秘書、主管或團隊共用日曆），上下文複雜，代理風險更高。</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="note-box">
+        <strong>必要 Scope 提示</strong>
+        <ul>
+          <li><code>Calendars.ReadWrite</code>：建立、回覆、更新、取消自己的行事曆事件。</li>
+          <li><code>Calendars.ReadWrite.Shared</code>：跨人員或共享行事曆寫入，風險明顯更高，建議做角色型授權。</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ═══ Mail ═══ -->
+    <div class="tab-panel" id="tab-mail">
+      <table class="perm-table">
+        <thead>
+          <tr>
+            <th style="width:110px">風險等級</th>
+            <th>功能（點擊查看說明）</th>
+            <th>為什麼這個等級</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="level-tag tag-l1">Level 1　低</span></td>
+            <td>
+              <div class="action-list">
+                <span class="action-chip"
+                  data-action="draft_email"
+                  data-scope="Mail.ReadWrite"
+                  data-level="l1"
+                  data-desc="建立 Outlook 草稿郵件並返回草稿訊息。草稿內容目前僅支援純文字格式，不會直接對外發送。">draft_email</span>
+                <span class="action-chip"
+                  data-action="create_reply_draft"
+                  data-scope="Mail.ReadWrite"
+                  data-level="l1"
+                  data-desc="為現有 Outlook 郵件建立回覆草稿，供使用者在發送前審閱或編輯。設 reply_all=true 時，Outlook 會包含串流中的所有收件人。">create_reply_draft</span>
+                <span class="action-chip"
+                  data-action="create_forward_draft"
+                  data-scope="Mail.ReadWrite"
+                  data-level="l1"
+                  data-desc="為現有 Outlook 郵件建立轉寄草稿，供使用者審閱或編輯後再手動發送。">create_forward_draft</span>
+                <span class="action-chip"
+                  data-action="mark_email_read_state"
+                  data-scope="Mail.ReadWrite"
+                  data-level="l1"
+                  data-desc="將 Outlook 郵件標記為已讀或未讀，並返回更新後的訊息。">mark_email_read_state</span>
+                <span class="action-chip"
+                  data-action="set_message_categories"
+                  data-scope="Mail.ReadWrite"
+                  data-level="l1"
+                  data-desc="替換 Outlook 郵件的分類標籤並返回更新後的訊息。">set_message_categories</span>
+                <span class="action-chip"
+                  data-action="create_category"
+                  data-scope="MailboxSettings.ReadWrite"
+                  data-level="l1"
+                  data-desc="在 Outlook 信箱中建立新的分類標籤，供後續用於標記訊息。">create_category</span>
+              </div>
+            </td>
+            <td>以草稿、標記、分類為主，不直接對外送出，操作多半可回復。</td>
+          </tr>
+          <tr>
+            <td><span class="level-tag tag-l2">Level 2　中低</span></td>
+            <td>
+              <div class="action-list">
+                <span class="action-chip"
+                  data-action="create_mail_folder"
+                  data-scope="Mail.ReadWrite"
+                  data-level="l2"
+                  data-desc="建立 Outlook 郵件資料夾，可選擇性地在現有父資料夾下建立巢狀結構（例如 Projects/Finance）。">create_mail_folder</span>
+              </div>
+            </td>
+            <td>會新增信箱結構，但不直接改變外部溝通內容。</td>
+          </tr>
+          <tr>
+            <td><span class="level-tag tag-l3">Level 3　中高</span></td>
+            <td>
+              <div class="action-list">
+                <span class="action-chip"
+                  data-action="send_email"
+                  data-scope="Mail.Send"
+                  data-level="l3"
+                  data-desc="立即發送新的 Outlook 郵件，一旦送出即無法召回。需要草稿優先流程時，請改用 draft_email。">send_email</span>
+                <span class="action-chip"
+                  data-action="reply_to_email"
+                  data-scope="Mail.Send"
+                  data-level="l3"
+                  data-desc="立即回覆現有 Outlook 郵件，立即送出。需要草稿優先流程時，請建立新草稿代替。">reply_to_email</span>
+                <span class="action-chip"
+                  data-action="forward_email"
+                  data-scope="Mail.Send"
+                  data-level="l3"
+                  data-desc="將現有 Outlook 郵件轉寄給新收件人，立即發送，不建立草稿。">forward_email</span>
+                <span class="action-chip"
+                  data-action="schedule_email"
+                  data-scope="Mail.ReadWrite + Mail.Send"
+                  data-level="l3"
+                  data-desc="將新 Outlook 郵件排程於未來特定時間發送。同時需要 Mail.ReadWrite 與 Mail.Send 兩個 scope，是 Level 3 中 scope 需求最多的動作。">schedule_email</span>
+                <span class="action-chip"
+                  data-action="unsubscribe_via_mailto"
+                  data-scope="Mail.Read + Mail.Send"
+                  data-level="l3"
+                  data-desc="當郵件包含 mailto 退訂連結時，以 mailto: 方式發送退訂請求。不執行 HTTPS one-click 退訂。雖名稱看似讀取，但實際屬於對外送出行為。">unsubscribe_via_mailto</span>
+                <span class="action-chip"
+                  data-action="move_email"
+                  data-scope="Mail.ReadWrite"
+                  data-level="l3"
+                  data-desc="將 Outlook 郵件移至其他郵件資料夾並返回移動後的訊息。">move_email</span>
+              </div>
+            </td>
+            <td>直接對外發送或改變信件位置；一旦送出即無法召回。</td>
+          </tr>
+          <tr>
+            <td><span class="level-tag tag-l4">Level 4　高</span></td>
+            <td>
+              <div class="action-list">
+                <span class="action-chip"
+                  data-action="send_email_on_behalf"
+                  data-scope="Mail.Send.Shared"
+                  data-level="l4"
+                  data-desc="從 delegated/shared 信箱（部門信箱、客服信箱、主管信箱）發送新 Outlook 郵件，可能代表整個組織對外發信。">send_email_on_behalf</span>
+                <span class="action-chip"
+                  data-action="mark_shared_email_read_state"
+                  data-scope="Mail.ReadWrite.Shared"
+                  data-level="l4"
+                  data-desc="將 delegated/shared 信箱中的郵件標記為已讀或未讀。">mark_shared_email_read_state</span>
+                <span class="action-chip"
+                  data-action="move_shared_email"
+                  data-scope="Mail.ReadWrite.Shared"
+                  data-level="l4"
+                  data-desc="移動 delegated/shared Outlook 信箱中的郵件至其他資料夾。">move_shared_email</span>
+              </div>
+            </td>
+            <td>涉及 delegated/shared mailbox，可能代表部門信箱、客服信箱或主管信箱。</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="note-box">
+        <strong>風險躍升點</strong>
+        <ul>
+          <li><code>Mail.Send</code> 是最關鍵的 scope，一旦開放 ChatGPT 即可直接代表使用者對外發信。</li>
+          <li><code>Mail.ReadWrite.Shared</code>、<code>Mail.Send.Shared</code> 建議視為管理級或特殊職務級權限。</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ═══ SharePoint ═══ -->
+    <div class="tab-panel" id="tab-sharepoint">
+      <table class="perm-table">
+        <thead>
+          <tr>
+            <th style="width:110px">風險等級</th>
+            <th>功能（點擊查看說明）</th>
+            <th>為什麼這個等級</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="level-tag tag-l2">Level 2　中低</span></td>
+            <td>
+              <div class="action-list">
+                <span class="action-chip"
+                  data-action="create_folder"
+                  data-scope="Files.ReadWrite.All + Sites.Read.All"
+                  data-level="l2"
+                  data-desc="在 SharePoint 文件庫中建立資料夾。影響集中在結構整理，不涉及現有文件內容。">create_folder</span>
+              </div>
+            </td>
+            <td>新增資料夾通常可控，影響集中在結構整理。</td>
+          </tr>
+          <tr>
+            <td><span class="level-tag tag-l3">Level 3　中高</span></td>
+            <td>
+              <div class="action-list">
+                <span class="action-chip"
+                  data-action="upload_file"
+                  data-scope="Files.ReadWrite.All + Sites.Read.All"
+                  data-level="l3"
+                  data-desc="將檔案上傳至 SharePoint。大型檔案會自動透過 Microsoft Graph 上傳 session 處理，可能覆蓋同名現有檔案。">upload_file</span>
+                <span class="action-chip"
+                  data-action="copy_item"
+                  data-scope="Files.ReadWrite.All"
+                  data-level="l3"
+                  data-desc="啟動非同步的 Graph 複製操作，用於複製 SharePoint 檔案或資料夾。操作為非同步執行。">copy_item</span>
+                <span class="action-chip"
+                  data-action="move_or_rename_item"
+                  data-scope="Files.ReadWrite.All + Sites.Read.All"
+                  data-level="l3"
+                  data-desc="移動或重新命名 SharePoint 檔案或資料夾，改變檔案在文件庫中的位置。">move_or_rename_item</span>
+                <span class="action-chip"
+                  data-action="update_file"
+                  data-scope="Files.ReadWrite.All + Sites.Read.All"
+                  data-level="l3"
+                  data-desc="以檔案參照完整替換現有 SharePoint 檔案的全部內容。">update_file</span>
+                <span class="action-chip"
+                  data-action="update_file_exact"
+                  data-scope="Files.ReadWrite.All"
+                  data-level="l3"
+                  data-desc="以精確目標完整替換現有 SharePoint 檔案的內容。">update_file_exact</span>
+                <span class="action-chip"
+                  data-action="restore_item_version"
+                  data-scope="Files.ReadWrite.All"
+                  data-level="l3"
+                  data-desc="還原 SharePoint 檔案的先前版本，並返回更新後的 metadata。">restore_item_version</span>
+                <span class="action-chip"
+                  data-action="invite_item_recipients"
+                  data-scope="Files.ReadWrite.All"
+                  data-level="l3"
+                  data-desc="邀請指定收件人存取 SharePoint 檔案或資料夾，直接改變資料的存取範圍（暴露面）。雖非刪除，但風險不可視為低。">invite_item_recipients</span>
+                <span class="action-chip"
+                  data-action="create_sharing_link"
+                  data-scope="Files.ReadWrite.All + Sites.Read.All"
+                  data-level="l3"
+                  data-desc="為現有 SharePoint 檔案或資料夾建立分享連結，直接改變資料暴露面。雖非刪除，但風險不可視為低。">create_sharing_link</span>
+              </div>
+            </td>
+            <td>新增/覆蓋內容、改變位置、改變共享範圍，對文件治理影響明顯。</td>
+          </tr>
+          <tr>
+            <td><span class="level-tag tag-l4">Level 4　高</span></td>
+            <td>
+              <div class="action-list">
+                <span class="action-chip"
+                  data-action="delete_item"
+                  data-scope="Files.ReadWrite.All + Sites.Read.All"
+                  data-level="l4"
+                  data-desc="依路徑刪除 SharePoint 檔案或資料夾。影響面大，操作不易逆轉。">delete_item</span>
+                <span class="action-chip"
+                  data-action="create_folders_bulk"
+                  data-scope="Files.ReadWrite.All + Sites.Read.All"
+                  data-level="l4"
+                  data-desc="批次建立多個 SharePoint 資料夾。一次操作可影響大量目錄結構。">create_folders_bulk</span>
+                <span class="action-chip"
+                  data-action="move_items_bulk"
+                  data-scope="Files.ReadWrite.All + Sites.Read.All"
+                  data-level="l4"
+                  data-desc="批次移動或重新命名多個 SharePoint 檔案或資料夾。一次可波及大量檔案，操作不易逆轉。">move_items_bulk</span>
+              </div>
+            </td>
+            <td>刪除與批次操作影響面最大，容易一次波及大量檔案或資料夾。</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="note-box">
+        <strong>注意</strong>
+        <ul>
+          <li><code>Files.ReadWrite.All</code> 本身已是高敏感 scope，涵蓋整個可存取文件面，應避免預設授予。</li>
+          <li><code>create_sharing_link</code> 與 <code>invite_item_recipients</code> 雖非刪除，但直接改變資料暴露面，不可視為低風險。</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ═══ Teams ═══ -->
+    <div class="tab-panel" id="tab-teams">
+      <table class="perm-table">
+        <thead>
+          <tr>
+            <th style="width:110px">風險等級</th>
+            <th>功能（點擊查看說明）</th>
+            <th>為什麼這個等級</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="level-tag tag-l2">Level 2　中低</span></td>
+            <td>
+              <div class="action-list">
+                <span class="action-chip"
+                  data-action="create_chat"
+                  data-scope="Chat.Create"
+                  data-level="l2"
+                  data-desc="建立新的 Microsoft Teams 聊天室。">create_chat</span>
+                <span class="action-chip"
+                  data-action="create_channel"
+                  data-scope="Channel.Create"
+                  data-level="l2"
+                  data-desc="在現有 Teams 中建立新頻道。可能影響團隊資訊架構與治理，不建議預設全開。">create_channel</span>
+                <span class="action-chip"
+                  data-action="create_planner_task"
+                  data-scope="Tasks.ReadWrite"
+                  data-level="l2"
+                  data-desc="在已知的 Planner 計畫與儲存桶中建立任務。">create_planner_task</span>
+              </div>
+            </td>
+            <td>建立新的協作空間或任務，影響協作結構，但通常不立即破壞既有資料。</td>
+          </tr>
+          <tr>
+            <td><span class="level-tag tag-l3">Level 3　中高</span></td>
+            <td>
+              <div class="action-list">
+                <span class="action-chip"
+                  data-action="send_chat_message"
+                  data-scope="ChatMessage.Send"
+                  data-level="l3"
+                  data-desc="向現有 Microsoft Teams 聊天室發送新訊息。本質類似 Mail.Send，是直接對協作者發送內容。">send_chat_message</span>
+                <span class="action-chip"
+                  data-action="send_channel_message"
+                  data-scope="ChannelMessage.Send"
+                  data-level="l3"
+                  data-desc="向 Microsoft Teams 頻道發送新的頂層訊息。本質類似 Mail.Send，是直接對協作者發送內容。">send_channel_message</span>
+                <span class="action-chip"
+                  data-action="reply_to_message"
+                  data-scope="ChannelMessage.Send + ChatMessage.Send"
+                  data-level="l3"
+                  data-desc="依路徑回覆 Teams 訊息，可回覆 channel 或 chat 訊息。同時需要 ChannelMessage.Send 與 ChatMessage.Send 兩個 scope。相較於 reply_to_channel_message，scope 需求更多。">reply_to_message</span>
+                <span class="action-chip"
+                  data-action="reply_to_channel_message"
+                  data-scope="ChannelMessage.Send"
+                  data-level="l3"
+                  data-desc="回覆現有 Microsoft Teams 頻道討論串。僅需要 ChannelMessage.Send，比 reply_to_message 的 scope 需求更少。">reply_to_channel_message</span>
+                <span class="action-chip"
+                  data-action="update_planner_task"
+                  data-scope="Tasks.ReadWrite"
+                  data-level="l3"
+                  data-desc="更新 Planner 任務並返回更新後的任務內容。">update_planner_task</span>
+              </div>
+            </td>
+            <td>直接對人發訊息或改動任務內容，容易造成誤溝通或錯誤指派。</td>
+          </tr>
+          <tr>
+            <td><span class="level-tag tag-l4">Level 4　高</span></td>
+            <td>
+              <div class="action-list">
+                <span class="action-chip"
+                  data-action="delete_planner_task"
+                  data-scope="Tasks.ReadWrite"
+                  data-level="l4"
+                  data-desc="使用任務的 ETag 安全刪除 Planner 任務。刪除後可能造成追蹤中斷或責任遺失。">delete_planner_task</span>
+              </div>
+            </td>
+            <td>直接刪除任務，可能造成追蹤中斷或責任遺失。</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="note-box">
+        <strong>注意</strong>
+        <ul>
+          <li><code>ChatMessage.Send</code>、<code>ChannelMessage.Send</code> 的本質類似 <code>Mail.Send</code>，是直接對協作者發送內容，應同樣謹慎。</li>
+          <li><code>reply_to_message</code> 需同時持有 <code>ChannelMessage.Send</code> + <code>ChatMessage.Send</code>；<code>reply_to_channel_message</code> 只需 <code>ChannelMessage.Send</code>。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ③ 情境建議 -->
+  <section id="sec-scenarios">
+    <h2>三、什麼情況開什麼等級</h2>
+    <div class="scenario-grid">
+      <div class="scenario-card plan-a">
+        <div class="plan-label">方案 A</div>
+        <h3>只開 Level 1</h3>
+        <div class="use-case">試點導入初期・使用者對 AI 尚在建立信任</div>
+        <div class="level-pills"><span class="level-tag tag-l1">Level 1</span></div>
+        <ul>
+          <li>Outlook Mail：草稿、分類、已讀未讀</li>
+          <li>不開任何直接送出、刪除、共享、批次操作</li>
+          <li>讓 ChatGPT 協助整理與起草，人工確認後再手動送出</li>
+        </ul>
+      </div>
+      <div class="scenario-card plan-b">
+        <div class="plan-label">方案 B</div>
+        <h3>開到 Level 2</h3>
+        <div class="use-case">內部個人效率場景・希望 AI 能幫建立工作內容</div>
+        <div class="level-pills"><span class="level-tag tag-l1">Level 1</span><span class="level-tag tag-l2">Level 2</span></div>
+        <ul>
+          <li>Calendar：建立事件、RSVP 回覆</li>
+          <li>Mail：草稿 + 建立信箱資料夾</li>
+          <li>SharePoint：建立資料夾</li>
+          <li>Teams：建立 chat、channel、planner task</li>
+        </ul>
+        <div class="warn">不開共享信箱 / 共享行事曆・不開直接送信・不開刪除與批次搬移</div>
+      </div>
+      <div class="scenario-card plan-c">
+        <div class="plan-label">方案 C</div>
+        <h3>開到 Level 3</h3>
+        <div class="use-case">使用者已接受 AI 代理日常操作・有明確 SOP 或人工確認步驟</div>
+        <div class="level-pills"><span class="level-tag tag-l1">Level 1</span><span class="level-tag tag-l2">Level 2</span><span class="level-tag tag-l3">Level 3</span></div>
+        <ul>
+          <li>Mail：send_email、reply_to_email、forward_email、schedule_email</li>
+          <li>Calendar：update_event</li>
+          <li>SharePoint：上傳、更新、搬移、分享連結</li>
+          <li>Teams：發訊、回覆、任務更新</li>
+        </ul>
+        <div class="warn">發送前確認收件人/標題/內容・檔案更新前確認目標路徑・分享連結限制內部人員</div>
+      </div>
+      <div class="scenario-card plan-d">
+        <div class="plan-label">方案 D</div>
+        <h3>開到 Level 4</h3>
+        <div class="use-case">行政助理、PMO、客服共用信箱管理者、知識庫管理者</div>
+        <div class="level-pills"><span class="level-tag tag-l1">Level 1</span><span class="level-tag tag-l2">Level 2</span><span class="level-tag tag-l3">Level 3</span><span class="level-tag tag-l4">Level 4</span></div>
+        <ul>
+          <li>共享信箱 / 共享行事曆寫入</li>
+          <li>刪除或取消操作</li>
+          <li>SharePoint 批次搬移、批次建資料夾、刪除</li>
+        </ul>
+        <div class="warn">必要前提：僅限少數角色・二次確認機制・稽核紀錄・先於測試租戶或低敏感區域驗證</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ④ 角色建議 -->
+  <section id="sec-roles">
+    <h2>四、依角色的建議開放等級</h2>
+    <table class="role-table">
+      <thead>
+        <tr>
+          <th style="width:180px">角色</th>
+          <th>Mail</th>
+          <th>Calendar</th>
+          <th>Teams</th>
+          <th>SharePoint</th>
+          <th>備註 / 前提</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>一般員工</strong><br><small style="color:var(--neutral-500)">知識工作者、PoC 初期</small></td>
+          <td><span class="level-tag tag-l1">L1</span>–<span class="level-tag tag-l2">L2</span><br><small>少量 L3</small></td>
+          <td><span class="level-tag tag-l2">L2</span></td>
+          <td><span class="level-tag tag-l2">L2</span></td>
+          <td><span class="level-tag tag-l2">最多 L2</span></td>
+          <td>最常需要起草、建會議、建任務，不需批次改文件庫或代發共享信箱。不建議預設開 <code>Files.ReadWrite.All</code>。</td>
+        </tr>
+        <tr>
+          <td><strong>部門助理<br>協作管理</strong></td>
+          <td><span class="level-tag tag-l3">L3</span><br><small>必要時 Shared</small></td>
+          <td><span class="level-tag tag-l3">L3</span><br><small>必要時 L4 Shared</small></td>
+          <td><span class="level-tag tag-l3">L3</span></td>
+          <td><span class="level-tag tag-l2">L2</span></td>
+          <td>需明確定義哪些 mailbox/calendar 可代理；保留操作紀錄。</td>
+        </tr>
+        <tr>
+          <td><strong>文件/知識庫<br>管理角色</strong></td>
+          <td><span class="level-tag tag-l2">L2</span></td>
+          <td><span class="level-tag tag-l2">L2</span></td>
+          <td><span class="level-tag tag-l2">L2</span></td>
+          <td><span class="level-tag tag-l3">L3</span><br><small>確認批次需求時 L4</small></td>
+          <td>文件庫分區明確；有版本管理與回復能力。L4 僅在確定有批次整理需求時開。</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ⑤ 預設開放組合 -->
+  <section id="sec-presets">
+    <h2>五、建議的預設開放組合</h2>
+    <div class="preset-grid">
+      <div class="preset-card preset-safe">
+        <div class="preset-header">安全預設（Safe Default）</div>
+        <div class="preset-body">
+          <div class="app-group">
+            <strong>Outlook Mail</strong>
+            <div class="chips">
+              <span class="chip-code" data-action="draft_email" data-scope="Mail.ReadWrite" data-level="l1" data-desc="建立 Outlook 草稿郵件並返回草稿訊息。草稿內容目前僅支援純文字格式，不會直接對外發送。">draft_email</span>
+              <span class="chip-code" data-action="create_reply_draft" data-scope="Mail.ReadWrite" data-level="l1" data-desc="為現有 Outlook 郵件建立回覆草稿，供使用者在發送前審閱或編輯。">create_reply_draft</span>
+              <span class="chip-code" data-action="create_forward_draft" data-scope="Mail.ReadWrite" data-level="l1" data-desc="為現有 Outlook 郵件建立轉寄草稿，供使用者審閱或編輯後再手動發送。">create_forward_draft</span>
+              <span class="chip-code" data-action="mark_email_read_state" data-scope="Mail.ReadWrite" data-level="l1" data-desc="將 Outlook 郵件標記為已讀或未讀，並返回更新後的訊息。">mark_email_read_state</span>
+              <span class="chip-code" data-action="set_message_categories" data-scope="Mail.ReadWrite" data-level="l1" data-desc="替換 Outlook 郵件的分類標籤並返回更新後的訊息。">set_message_categories</span>
+              <span class="chip-code" data-action="create_category" data-scope="MailboxSettings.ReadWrite" data-level="l1" data-desc="在 Outlook 信箱中建立新的分類標籤，供後續用於標記訊息。">create_category</span>
+            </div>
+          </div>
+          <div class="app-group">
+            <strong>Outlook Calendar</strong>
+            <div class="chips">
+              <span class="chip-code" data-action="create_event" data-scope="Calendars.ReadWrite" data-level="l2" data-desc="在使用者的 Outlook 行事曆中建立新事件。帶入與會者時，Outlook 會自動發送會議邀請。">create_event</span>
+              <span class="chip-code" data-action="respond_to_event" data-scope="Calendars.ReadWrite" data-level="l2" data-desc="回應 Outlook 會議邀請，可選擇接受、拒絕或暫定。">respond_to_event</span>
+            </div>
+          </div>
+          <div class="app-group">
+            <strong>Teams</strong>
+            <div class="chips">
+              <span class="chip-code" data-action="create_chat" data-scope="Chat.Create" data-level="l2" data-desc="建立新的 Microsoft Teams 聊天室。">create_chat</span>
+              <span class="chip-code" data-action="create_planner_task" data-scope="Tasks.ReadWrite" data-level="l2" data-desc="在已知的 Planner 計畫與儲存桶中建立任務。">create_planner_task</span>
+            </div>
+          </div>
+          <div class="app-group">
+            <strong>SharePoint</strong>
+            <div class="chips">
+              <span class="chip-code" data-action="create_folder" data-scope="Files.ReadWrite.All + Sites.Read.All" data-level="l2" data-desc="在 SharePoint 文件庫中建立資料夾。">create_folder</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="preset-card preset-bal">
+        <div class="preset-header">平衡效率預設（Balanced）</div>
+        <div class="preset-body">
+          <div class="app-group">
+            <strong>涵蓋安全預設，另加</strong>
+            <div class="chips">
+              <span class="chip-code" data-action="send_email" data-scope="Mail.Send" data-level="l3" data-desc="立即發送新的 Outlook 郵件，一旦送出即無法召回。">send_email</span>
+              <span class="chip-code" data-action="reply_to_email" data-scope="Mail.Send" data-level="l3" data-desc="立即回覆現有 Outlook 郵件，立即送出。">reply_to_email</span>
+              <span class="chip-code" data-action="schedule_email" data-scope="Mail.ReadWrite + Mail.Send" data-level="l3" data-desc="將新 Outlook 郵件排程於未來特定時間發送。同時需要 Mail.ReadWrite 與 Mail.Send 兩個 scope。">schedule_email</span>
+              <span class="chip-code" data-action="update_event" data-scope="Calendars.ReadWrite" data-level="l3" data-desc="更新現有 Outlook 行事曆事件，可調整標題、內容、地點、與會者或時間。">update_event</span>
+              <span class="chip-code" data-action="send_chat_message" data-scope="ChatMessage.Send" data-level="l3" data-desc="向現有 Microsoft Teams 聊天室發送新訊息。">send_chat_message</span>
+              <span class="chip-code" data-action="reply_to_message" data-scope="ChannelMessage.Send + ChatMessage.Send" data-level="l3" data-desc="依路徑回覆 Teams 訊息，可回覆 channel 或 chat 訊息。同時需要兩個 scope。">reply_to_message</span>
+            </div>
+          </div>
+          <div class="app-group">
+            <strong>SharePoint 仍不建議開</strong>
+            <div class="chips">
+              <span class="chip-warn" data-action="delete_item" data-scope="Files.ReadWrite.All + Sites.Read.All" data-level="l4" data-desc="依路徑刪除 SharePoint 檔案或資料夾。影響面大，操作不易逆轉。">delete_item</span>
+              <span class="chip-warn" data-action="move_items_bulk" data-scope="Files.ReadWrite.All + Sites.Read.All" data-level="l4" data-desc="批次移動或重新命名多個 SharePoint 檔案或資料夾。一次可波及大量檔案。">move_items_bulk</span>
+              <span class="chip-warn" data-action="create_sharing_link" data-scope="Files.ReadWrite.All + Sites.Read.All" data-level="l3" data-desc="為現有 SharePoint 檔案或資料夾建立分享連結，直接改變資料暴露面。">create_sharing_link</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="preset-card preset-auto">
+        <div class="preset-header">高自治預設（High Autonomy）</div>
+        <div class="preset-body">
+          <div class="app-group">
+            <strong>Level 1–3 多數操作可開，以下仍需獨立審批</strong>
+            <div class="chips">
+              <span class="chip-warn" data-action="send_email_on_behalf" data-scope="Mail.Send.Shared" data-level="l4" data-desc="從 delegated/shared 信箱發送新 Outlook 郵件，可能代表整個組織對外發信。">send_email_on_behalf</span>
+              <span class="chip-warn" data-action="cancel_or_delete_shared_calendar_event" data-scope="Calendars.ReadWrite.Shared" data-level="l4" data-desc="取消或刪除 delegated 或共享行事曆上的事件。僅在使用者明確要對共享/delegated 行事曆操作時使用。">cancel_or_delete_shared_calendar_event</span>
+              <span class="chip-warn" data-action="delete_item" data-scope="Files.ReadWrite.All + Sites.Read.All" data-level="l4" data-desc="依路徑刪除 SharePoint 檔案或資料夾。影響面大，操作不易逆轉。">delete_item</span>
+              <span class="chip-warn" data-action="move_items_bulk" data-scope="Files.ReadWrite.All + Sites.Read.All" data-level="l4" data-desc="批次移動或重新命名多個 SharePoint 檔案或資料夾。">move_items_bulk</span>
+              <span class="chip-warn" data-action="create_sharing_link" data-scope="Files.ReadWrite.All + Sites.Read.All" data-level="l3" data-desc="為現有 SharePoint 檔案或資料夾建立分享連結，直接改變資料暴露面。">create_sharing_link</span>
+              <span class="chip-warn" data-action="invite_item_recipients" data-scope="Files.ReadWrite.All" data-level="l3" data-desc="邀請指定收件人存取 SharePoint 檔案或資料夾，直接改變資料的存取範圍。">invite_item_recipients</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑥ 總結 -->
+  <section id="sec-summary">
+    <h2>六、核心原則總結</h2>
+    <ol class="summary-list">
+      <li>預設只開 Level 1–2，讓 ChatGPT 幫助整理與起草，人工最終確認後再送出。</li>
+      <li>Level 3 採「有明確需求再開」策略，開放前要確認有 SOP 或二次確認流程。</li>
+      <li>Level 4 不做預設開放，改為角色型授權（行政助理、PMO、知識庫管理員等）。</li>
+      <li>Shared mailbox / shared calendar 一律比個人帳號高一個等級看待。</li>
+      <li>SharePoint 的分享與批次操作，應比一般訊息或會議操作採更嚴格的管控標準。</li>
+    </ol>
+  </section>
+
+</main>
+
+<!-- ═══ Modal ═══ -->
+<div id="action-modal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span class="modal-action-name" id="modal-action-name"></span>
+      <span class="modal-level-tag" id="modal-level-tag"></span>
+      <button class="modal-close" id="modal-close" aria-label="關閉">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-scope" id="modal-scope"></div>
+      <div class="modal-desc" id="modal-desc"></div>
+      <div class="modal-hint" id="modal-hint"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ── Tab switching ── */
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + target).classList.add('active');
+    });
+  });
+
+  /* ── Modal ── */
+  const modal    = document.getElementById('action-modal');
+  const mAction  = document.getElementById('modal-action-name');
+  const mLevel   = document.getElementById('modal-level-tag');
+  const mScope   = document.getElementById('modal-scope');
+  const mDesc    = document.getElementById('modal-desc');
+  const mHint    = document.getElementById('modal-hint');
+  const mClose   = document.getElementById('modal-close');
+
+  const levelLabel = { l1: 'Level 1　低風險', l2: 'Level 2　中低風險', l3: 'Level 3　中高風險', l4: 'Level 4　高風險' };
+  const levelClass = { l1: 'tag-l1', l2: 'tag-l2', l3: 'tag-l3', l4: 'tag-l4' };
+
+  function openModal(el) {
+    const action = el.dataset.action;
+    const scope  = el.dataset.scope  || '';
+    const level  = el.dataset.level  || '';
+    const desc   = el.dataset.desc   || '';
+
+    mAction.textContent = action;
+
+    mLevel.className = 'level-tag ' + (levelClass[level] || '');
+    mLevel.textContent = levelLabel[level] || '';
+
+    const scopeParts = scope.split('+').map(s => s.trim()).filter(Boolean);
+    mScope.innerHTML = scopeParts.length
+      ? '必要權限範圍：' + scopeParts.map(s => `<code>${s}</code>`).join(' + ')
+      : '';
+
+    mDesc.textContent = desc;
+
+    const hints = {
+      'create_event': '帶入與會者時 Outlook 會自動送出邀請，實際影響接近 Level 3。',
+      'respond_to_event': '帶 send_response=true 時會送出 RSVP 通知，若組織要求嚴格可考慮提升至 Level 3。',
+      'schedule_email': '同時需要 Mail.ReadWrite 與 Mail.Send 兩個 scope，是 Level 3 中 scope 需求最多的動作。',
+      'unsubscribe_via_mailto': '雖名稱看似讀取，但實際以 mailto: 方式對外發送，屬對外送出行為。',
+      'create_channel': '可能影響團隊資訊架構與治理，不建議預設全開。',
+      'reply_to_message': '同時需要 ChannelMessage.Send + ChatMessage.Send；reply_to_channel_message 只需 ChannelMessage.Send。',
+      'create_sharing_link': '雖非刪除，但直接改變資料暴露面，風險不可視為低。',
+      'invite_item_recipients': '雖非刪除，但直接改變資料存取範圍，風險不可視為低。',
+      'Files.ReadWrite.All': 'Files.ReadWrite.All 本身已是高敏感 scope，涵蓋整個可存取文件面，應避免預設授予。',
+    };
+    const hint = hints[action] || '';
+    mHint.style.display = hint ? '' : 'none';
+    mHint.textContent = hint ? '⚠ ' + hint : '';
+
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  document.querySelectorAll('.action-chip, .chip-code, .chip-warn').forEach(chip => {
+    chip.addEventListener('click', () => openModal(chip));
+  });
+
+  mClose.addEventListener('click', closeModal);
+  modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+</script>
+
+</body>
+</html>
